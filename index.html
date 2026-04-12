@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Impact Cards - Race for Impact</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rfi-black: #000000;
+    --rfi-deep-blue: #3759B6;
+    --rfi-pastel-blue: #97CEFF;
+    --rfi-white: #FFFFFF;
+    --rfi-dark-surface: #0a0a0a;
+    --rfi-muted: #888;
+    --rfi-glow: rgba(55, 89, 182, 0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--rfi-black);
+    color: var(--rfi-white);
+    font-family: 'Inter', sans-serif;
+    touch-action: manipulation;
+  }
+
+  .app { width: 100%; height: 100%; position: relative; overflow: hidden; }
+
+  .screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 24px 80px;
+    opacity: 0; transform: translateX(100%);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity; pointer-events: none;
+  }
+  .screen.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+
+  .glow {
+    position: absolute; width: 400px; height: 400px; border-radius: 50%;
+    filter: blur(120px); opacity: 0.15; pointer-events: none; z-index: 0;
+  }
+  .glow-tr { background: var(--rfi-deep-blue); top: -100px; right: -100px; }
+  .glow-bl { background: var(--rfi-pastel-blue); bottom: -150px; left: -100px; }
+  .glow-tl { background: var(--rfi-deep-blue); top: 20%; left: -200px; }
+  .glow-br { background: var(--rfi-pastel-blue); bottom: 10%; right: -150px; }
+
+  /* Typography */
+  .tag {
+    font-family: 'Chakra Petch', sans-serif; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 4px; color: var(--rfi-pastel-blue); margin-bottom: 24px; text-align: center;
+  }
+  .headline {
+    font-family: 'Chakra Petch', sans-serif; font-size: clamp(28px, 7vw, 48px); font-weight: 700;
+    text-transform: uppercase; line-height: 1.05; text-align: center; margin-bottom: 16px;
+  }
+  .big-number {
+    font-family: 'Chakra Petch', sans-serif; font-size: clamp(64px, 18vw, 120px); font-weight: 700;
+    background: linear-gradient(180deg, var(--rfi-white) 30%, var(--rfi-pastel-blue) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1;
+  }
+  .separator { width: 40px; height: 2px; background: var(--rfi-deep-blue); margin: 20px auto; }
+  .accent { color: var(--rfi-pastel-blue); }
+
+  /* ---- SCREEN 1 ---- */
+  .s1-content { display: flex; flex-direction: column; align-items: center; z-index: 1; width: 100%; max-width: 380px; }
+  .donor-label { font-size: 13px; color: var(--rfi-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .donor-name { font-family: 'Chakra Petch', sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .amount-wrap { position: relative; margin: 8px 0 28px; }
+  .amount-glow {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 200px; height: 200px; border-radius: 50%; background: var(--rfi-glow);
+    filter: blur(60px); animation: glowPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.2); }
+  }
+  .quote-block { border-left: 2px solid var(--rfi-deep-blue); padding: 12px 16px; margin: 0 0 32px; width: 100%; }
+  .quote-block p { font-style: italic; font-size: 15px; line-height: 1.55; color: rgba(255,255,255,0.65); }
+  .racer-info { text-align: center; }
+  .racer-info .name { font-family: 'Chakra Petch', sans-serif; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 3px; }
+  .racer-info .event { font-size: 12px; color: var(--rfi-muted); margin-top: 4px; letter-spacing: 1px; }
+
+  /* ---- SCREEN 2 ---- */
+  .s2-content { display: flex; flex-direction: column; align-items: center; z-index: 1; width: 100%; max-width: 400px; flex: 1; justify-content: center; }
+  .cause-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(151,206,255,0.08); border: 1px solid rgba(151,206,255,0.2);
+    border-radius: 20px; padding: 6px 16px; margin-bottom: 16px;
+  }
+  .cause-badge .icon { font-size: 18px; }
+  .cause-badge .label { font-family: 'Chakra Petch', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--rfi-pastel-blue); }
+
+  .cards-stack { position: relative; width: 100%; height: 280px; margin: 12px 0 16px; }
+
+  .impact-card {
+    position: absolute; top: 0; left: 0; width: 100%;
+    background: var(--rfi-dark-surface); border: 1px solid rgba(151,206,255,0.12);
+    border-radius: 16px; padding: 24px; text-align: left;
+    opacity: 0; transform: translateY(30px) scale(0.96);
+    transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none;
+  }
+  .impact-card.active { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; border-color: rgba(151,206,255,0.25); }
+  .impact-card.prev { opacity: 0; transform: translateY(-30px) scale(0.96); }
+
+  .impact-card .charity-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: var(--rfi-muted); margin-bottom: 12px; }
+  .impact-card .impact-num {
+    font-family: 'Chakra Petch', sans-serif; font-size: clamp(48px, 12vw, 72px); font-weight: 700;
+    background: linear-gradient(180deg, var(--rfi-white) 30%, var(--rfi-pastel-blue) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    line-height: 1; margin-bottom: 4px;
+  }
+  .impact-card .impact-unit { font-family: 'Chakra Petch', sans-serif; font-size: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
+  .impact-card .impact-desc { font-size: 13px; line-height: 1.55; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+  .impact-card .source-link {
+    font-size: 11px; color: var(--rfi-pastel-blue); text-decoration: none;
+    border-bottom: 1px solid rgba(151,206,255,0.3); padding-bottom: 1px;
+    transition: border-color 0.2s;
+  }
+  .impact-card .source-link:hover { border-color: var(--rfi-pastel-blue); }
+
+  .cards-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 12px; }
+  .card-arrow {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(55,89,182,0.15); border: 1px solid rgba(151,206,255,0.25);
+    color: var(--rfi-pastel-blue); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; flex-shrink: 0;
+  }
+  .card-arrow:hover { background: rgba(55,89,182,0.35); border-color: var(--rfi-pastel-blue); transform: scale(1.1); }
+  .card-dots { display: flex; gap: 8px; justify-content: center; }
+  .card-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s ease; }
+  .card-dot.active { background: var(--rfi-pastel-blue); width: 20px; border-radius: 3px; }
+  .card-counter { font-family: 'Chakra Petch', sans-serif; font-size: 11px; letter-spacing: 2px; color: var(--rfi-muted); min-width: 40px; text-align: center; }
+  .portfolio-note { font-size: 11px; color: rgba(255,255,255,0.25); text-align: center; margin-top: 14px; line-height: 1.5; }
+
+  /* ---- SCREEN 3 ---- */
+  .s3-content { display: flex; flex-direction: column; align-items: center; gap: 12px; z-index: 1; width: 100%; max-width: 380px; }
+  .evidence-box { background: var(--rfi-dark-surface); border: 1px solid rgba(151,206,255,0.15); border-radius: 12px; padding: 18px 20px; width: 100%; text-align: left; }
+  .evidence-box h3 { font-family: 'Chakra Petch', sans-serif; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; color: var(--rfi-pastel-blue); }
+  .evidence-box p { font-size: 13px; line-height: 1.55; color: rgba(255,255,255,0.55); }
+  .evidence-box a { color: var(--rfi-pastel-blue); text-decoration: none; border-bottom: 1px solid rgba(151,206,255,0.3); }
+  .evidence-box a:hover { border-color: var(--rfi-pastel-blue); }
+  .cta-button {
+    display: inline-block; background: var(--rfi-deep-blue); color: var(--rfi-white);
+    font-family: 'Chakra Petch', sans-serif; font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 2px; padding: 14px 28px;
+    border-radius: 8px; border: none; cursor: pointer; text-decoration: none; margin-top: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cta-button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--rfi-glow); }
+  .secondary-link { font-size: 12px; color: var(--rfi-pastel-blue); text-decoration: none; letter-spacing: 0.5px; margin-top: 4px; }
+  .branding { font-family: 'Chakra Petch', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 3px; color: rgba(255,255,255,0.25); margin-top: 20px; }
+
+  /* ---- VIDEO PLACEHOLDER ---- */
+  .video-container {
+    width: 100%; max-width: 380px; aspect-ratio: 9/16;
+    max-height: 50vh;
+    background: var(--rfi-dark-surface);
+    border: 1px solid rgba(151,206,255,0.15);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .video-container video {
+    width: 100%; height: 100%; object-fit: cover; border-radius: 16px;
+  }
+  .video-placeholder {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    color: rgba(255,255,255,0.25);
+  }
+  .video-play-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 2px solid rgba(151,206,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--rfi-pastel-blue);
+    transition: all 0.2s ease;
+  }
+  .video-play-icon:hover {
+    border-color: var(--rfi-pastel-blue);
+    background: rgba(55,89,182,0.15);
+    transform: scale(1.05);
+  }
+  .video-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+    color: rgba(255,255,255,0.3);
+  }
+  .expert-name {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 14px; font-weight: 600; color: var(--rfi-white);
+    margin-top: 4px;
+  }
+  .expert-role {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; color: var(--rfi-muted);
+  }
+
+  /* ---- NAV ---- */
+  .nav-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; z-index: 100; transition: opacity 0.4s ease; }
+  .nav-bar.hidden-by-splash { opacity: 0; pointer-events: none; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); cursor: pointer; transition: all 0.3s ease; }
+  .nav-dot.active { background: var(--rfi-pastel-blue); width: 24px; border-radius: 4px; }
+  .nav-label { font-family: 'Chakra Petch', sans-serif; font-size: 10px; letter-spacing: 2px; color: var(--rfi-muted); margin-left: 8px; }
+
+  .swipe-hint {
+    position: absolute; bottom: 56px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: rgba(255,255,255,0.3); letter-spacing: 1px; text-transform: uppercase;
+    animation: nudge 2s ease-in-out infinite; z-index: 1;
+  }
+  @keyframes nudge {
+    0%, 100% { opacity: 0.3; transform: translateX(-50%); }
+    50% { opacity: 0.6; transform: translateX(calc(-50% + 6px)); }
+  }
+
+  .arrow-btn {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(55,89,182,0.15); border: 1px solid rgba(151,206,255,0.2);
+    color: var(--rfi-pastel-blue); font-size: 20px; cursor: pointer; z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .arrow-btn:hover { background: rgba(55,89,182,0.35); border-color: var(--rfi-pastel-blue); transform: translateY(-50%) scale(1.1); }
+  .arrow-btn.hidden { opacity: 0; pointer-events: none; }
+  .arrow-left { left: 16px; }
+  .arrow-right { right: 16px; }
+  @media (max-width: 600px) { .arrow-btn { display: none; } }
+
+  /* ---- SPLASH SCREEN ---- */
+  .splash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--rfi-black); z-index: 500;
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+  }
+  .splash.gone { opacity: 0; pointer-events: none; }
+
+  .splash-badge {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    border: 3px solid var(--rfi-pastel-blue);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    animation: badgeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .splash-badge-inner {
+    font-size: 56px;
+    line-height: 1;
+    animation: badgeIconIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  }
+
+  .splash-glow {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 250px; height: 250px; border-radius: 50%;
+    background: var(--rfi-glow); filter: blur(80px);
+    animation: splashPulse 2s ease-in-out infinite 0.4s;
+  }
+
+  .splash-text {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 24px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 8px; color: var(--rfi-white);
+    margin-top: 28px;
+    opacity: 0; transform: translateY(12px);
+    animation: splashTextIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+  }
+
+  .splash-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px; color: var(--rfi-muted); letter-spacing: 1px;
+    margin-top: 8px;
+    opacity: 0;
+    animation: splashTextIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+  }
+
+  @keyframes badgeIn {
+    0% { opacity: 0; transform: scale(0.6); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes badgeIconIn {
+    0% { opacity: 0; transform: scale(0.5); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes splashPulse {
+    0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.4; transform: translate(-50%, -50%) scale(1.15); }
+  }
+  @keyframes splashTextIn {
+    0% { opacity: 0; transform: translateY(12px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Badge mini (persists at top of Screen 1 after transition) */
+  .badge-mini {
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0; transform: translateY(-10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    margin-bottom: 16px;
+  }
+  .badge-mini.visible { opacity: 1; transform: translateY(0); }
+  .badge-mini-circle {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 2px solid var(--rfi-pastel-blue);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .badge-mini-label {
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 3px; color: var(--rfi-pastel-blue);
+  }
+
+  /* Entrance animations */
+  .fade-up { opacity: 0; transform: translateY(24px); transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  .screen.active .fade-up { opacity: 1; transform: translateY(0); }
+  .screen.active .fade-up:nth-child(1) { transition-delay: 0.05s; }
+  .screen.active .fade-up:nth-child(2) { transition-delay: 0.1s; }
+  .screen.active .fade-up:nth-child(3) { transition-delay: 0.15s; }
+  .screen.active .fade-up:nth-child(4) { transition-delay: 0.2s; }
+  .screen.active .fade-up:nth-child(5) { transition-delay: 0.25s; }
+  .screen.active .fade-up:nth-child(6) { transition-delay: 0.3s; }
+  .screen.active .fade-up:nth-child(7) { transition-delay: 0.35s; }
+  .screen.active .fade-up:nth-child(8) { transition-delay: 0.4s; }
+  .screen.active .fade-up:nth-child(9) { transition-delay: 0.45s; }
+  .screen.active .fade-up:nth-child(10) { transition-delay: 0.5s; }
+
+  @media (max-width: 380px) { .screen { padding: 32px 18px 80px; } .evidence-box { padding: 14px 16px; } }
+</style>
+</head>
+<body>
+
+<!-- Splash overlay -->
+<div class="splash" id="splash">
+  <div class="splash-glow"></div>
+  <div class="splash-badge">
+    <div class="splash-badge-inner">🎯</div>
+  </div>
+  <div class="splash-text">1st Donation</div>
+  <div class="splash-sub">Tap to reveal</div>
+</div>
+
+<div class="app" id="app">
+  <!-- Screens get built by JS -->
+</div>
+
+<button class="arrow-btn arrow-left hidden" id="arrowLeft">&#8592;</button>
+<button class="arrow-btn arrow-right" id="arrowRight">&#8594;</button>
+
+<div class="nav-bar hidden-by-splash" id="navBar">
+  <div class="nav-dot active" data-nav="0"></div>
+  <div class="nav-dot" data-nav="1"></div>
+  <div class="nav-dot" data-nav="2"></div>
+  <span class="nav-label" id="navLabel">1 / 3</span>
+</div>
+
+<script>
+(function() {
+
+  // ============================================================
+  // CONFIG: Change these values and everything updates
+  // ============================================================
+  const DONATION = {
+    amount: 50,
+    currency: '$',
+    donorName: 'Sarah Mitchell',
+    donorMessage: "Go get 'em Hugo! So proud of you for doing this. Smash it! 🏃‍♂️",
+    isSelfDonation: false,
+    racerName: 'Hugo Inglis',
+    event: 'HYROX NYC 2026',
+    causeArea: 'global_health',   // global_health | mental_health | womens_empowerment | animal_welfare | climate
+  };
+
+  const HAIRCUT = 0.40;
+
+  // Cost per unit of impact (in USD, BEFORE haircut applied)
+  // These are the "whole donation to this org" ratios from the master sheet
+  // Derived from: $230 donation / impact count (without haircut column)
+  const CAUSE_DATA = {
+    global_health: {
+      name: 'Global Health',
+      icon: '🦟',
+      expert: { name: 'Jack', role: 'Cause Area Lead', videoUrl: '' },
+      charities: [
+        {
+          name: 'Against Malaria Foundation',
+          costPerUnit: 5.00,       // $230 / 46.00 nets
+          unit: 'bednets',
+          unitSingular: 'bednet',
+          desc: 'Distributed to families in sub-Saharan Africa. Each net protects ~1.8 people from malaria for 3 years.',
+          source: 'https://www.givewell.org/charities/amf',
+          sourceLabel: 'GiveWell: Why we recommend AMF',
+        },
+        {
+          name: 'Helen Keller International',
+          costPerUnit: 2.00,       // $230 / 115 children
+          unit: 'children protected',
+          unitSingular: 'child protected',
+          desc: 'Receive vitamin A supplements for a full year, protecting against childhood blindness and deadly infections.',
+          source: 'https://www.givewell.org/charities/helen-keller-international',
+          sourceLabel: 'GiveWell: Why we recommend HKI',
+        },
+        {
+          name: 'Evidence Action',
+          costPerUnit: 1.86,       // $230 / 123.66
+          unit: 'people with clean water',
+          unitSingular: 'person with clean water',
+          desc: 'Given safe drinking water for a year through chlorine dispensers at community water points.',
+          source: 'https://www.givewell.org/charities/evidence-action',
+          sourceLabel: 'GiveWell: Why we recommend Evidence Action',
+        },
+        {
+          name: 'New Incentives',
+          costPerUnit: 155.41,     // $230 / 1.48
+          unit: 'infants vaccinated',
+          unitSingular: 'infant vaccinated',
+          desc: 'Vaccinated against preventable diseases through conditional cash transfers in northern Nigeria.',
+          source: 'https://www.givewell.org/charities/new-incentives',
+          sourceLabel: 'GiveWell: Why we recommend New Incentives',
+        },
+        {
+          name: 'Taimaka',
+          costPerUnit: 93.88,      // $230 / 2.45
+          unit: 'children treated',
+          unitSingular: 'child treated',
+          desc: 'Treated for severe acute malnutrition through community-based management programmes.',
+          source: 'https://www.givewell.org/charities/taimaka',
+          sourceLabel: 'GiveWell: Why we recommend Taimaka',
+        },
+      ],
+    },
+    mental_health: {
+      name: 'Mental Health',
+      icon: '💜',
+      expert: { name: 'Jack', role: 'Cause Area Lead', videoUrl: '' },
+      charities: [
+        {
+          name: 'StrongMinds',
+          costPerUnit: 45.01,      // $230 / 5.11
+          unit: 'people treated',
+          unitSingular: 'person treated',
+          desc: 'Treated for depression through group psychotherapy sessions led by trained community health workers.',
+          source: 'https://www.founderspledge.com/research/mental-health-report',
+          sourceLabel: 'Founders Pledge: Mental Health Report',
+        },
+        {
+          name: 'Friendship Bench',
+          costPerUnit: 16.50,      // $230 / 13.94
+          unit: 'people treated',
+          unitSingular: 'person treated',
+          desc: 'Treated for depression and anxiety through community-based counselling on park benches in Zimbabwe.',
+          source: 'https://www.friendshipbenchzimbabwe.org/evidence',
+          sourceLabel: 'Friendship Bench: Evidence base',
+        },
+        {
+          name: 'Action for Happiness',
+          costPerUnit: 6.97,       // $230 / 33
+          unit: 'lives improved',
+          unitSingular: 'life improved',
+          desc: 'Measurably improved wellbeing through science-based happiness courses and community programmes.',
+          source: 'https://actionforhappiness.org/about-us',
+          sourceLabel: 'Action for Happiness: Our impact',
+        },
+      ],
+    },
+    womens_empowerment: {
+      name: "Women's Empowerment",
+      icon: '👩',
+      expert: { name: 'Jack', role: 'Cause Area Lead', videoUrl: '' },
+      charities: [
+        {
+          name: 'CEDOVIP',
+          costPerUnit: 21.00,      // $230 / 10.95
+          unit: 'people reached',
+          unitSingular: 'person reached',
+          desc: 'Reached through community workshops tackling violence against women and girls in Uganda.',
+          source: 'https://www.givewell.org/research/incubation-grants#CEDOVIP',
+          sourceLabel: 'GiveWell: CEDOVIP research',
+        },
+        {
+          name: 'Family Empowerment Media',
+          costPerUnit: 15.65,      // $230 / 14.70
+          unit: 'women helped',
+          unitSingular: 'woman helped',
+          desc: 'Helped to start using contraception through trusted radio-based health messaging.',
+          source: 'https://www.founderspledge.com/research/family-planning',
+          sourceLabel: 'Founders Pledge: Family Planning Report',
+        },
+        {
+          name: 'Lafiya',
+          costPerUnit: 3.49,       // $230 / 65.90
+          unit: 'contraceptives delivered',
+          unitSingular: 'contraceptive delivered',
+          desc: 'Self-injectable contraceptives purchased and delivered to women in Nigeria.',
+          source: 'https://www.givewell.org/research/incubation-grants',
+          sourceLabel: 'GiveWell: Incubation grants',
+        },
+      ],
+    },
+    animal_welfare: {
+      name: 'Animal Welfare',
+      icon: '🐾',
+      expert: { name: 'Jack', role: 'Cause Area Lead', videoUrl: '' },
+      charities: [
+        {
+          name: 'Anima International',
+          costPerUnit: 0.074,      // $230 / 3128
+          unit: 'animals spared',
+          unitSingular: 'animal spared',
+          desc: 'Spared from factory farming through corporate campaigns improving welfare standards across Europe.',
+          source: 'https://animalcharityevaluators.org/charity-review/anima-international/',
+          sourceLabel: 'ACE: Anima International review',
+        },
+        {
+          name: 'The Humane League',
+          costPerUnit: 1.20,       // $230 / 191
+          unit: 'animals helped',
+          unitSingular: 'animal helped',
+          desc: 'Helped through corporate campaigns securing cage-free egg commitments worldwide.',
+          source: 'https://animalcharityevaluators.org/charity-review/the-humane-league/',
+          sourceLabel: 'ACE: The Humane League review',
+        },
+        {
+          name: 'Good Food Institute',
+          costPerUnit: 0.188,      // $230 / 1227
+          unit: 'animals spared',
+          unitSingular: 'animal spared',
+          desc: 'Spared through accelerating innovation in plant-based and cultivated meat technologies.',
+          source: 'https://animalcharityevaluators.org/charity-review/the-good-food-institute/',
+          sourceLabel: 'ACE: Good Food Institute review',
+        },
+        {
+          name: 'Sinergia Animal',
+          costPerUnit: 0.346,      // $230 / 664
+          unit: 'animals helped',
+          unitSingular: 'animal helped',
+          desc: 'Helped through corporate pressure campaigns reducing animal suffering globally.',
+          source: 'https://animalcharityevaluators.org/charity-review/sinergia-animal/',
+          sourceLabel: 'ACE: Sinergia Animal review',
+        },
+      ],
+    },
+    climate: {
+      name: 'Climate Solutions',
+      icon: '🌍',
+      expert: { name: 'Jack', role: 'Cause Area Lead', videoUrl: '' },
+      charities: [
+        {
+          name: 'Opportunity Green',
+          costPerUnit: 1.00,       // Conservative $1/tonne estimate
+          unit: 'tonnes CO\u2082e avoided',
+          unitSingular: 'tonne CO\u2082e avoided',
+          desc: 'Avoided through advocating policies to reduce aviation emissions at global scale.',
+          source: 'https://www.givinggreen.earth/recommendations',
+          sourceLabel: 'Giving Green: Climate recommendations',
+        },
+        {
+          name: 'Clean Air Task Force',
+          costPerUnit: 1.00,
+          unit: 'tonnes CO\u2082e avoided',
+          unitSingular: 'tonne CO\u2082e avoided',
+          desc: 'Avoided through policy advocacy for zero-carbon energy and industrial decarbonisation.',
+          source: 'https://www.founderspledge.com/research/climate-change',
+          sourceLabel: 'Founders Pledge: Climate Change Report',
+        },
+        {
+          name: 'Future Cleantech Architects',
+          costPerUnit: 1.00,
+          unit: 'tonnes CO\u2082e avoided',
+          unitSingular: 'tonne CO\u2082e avoided',
+          desc: 'Avoided through expert policy advice on reducing construction and industrial emissions.',
+          source: 'https://www.givinggreen.earth/recommendations',
+          sourceLabel: 'Giving Green: Climate recommendations',
+        },
+        {
+          name: 'Project Innerspace',
+          costPerUnit: 1.00,
+          unit: 'tonnes CO\u2082e avoided',
+          unitSingular: 'tonne CO\u2082e avoided',
+          desc: 'Avoided through accelerating next-generation geothermal and clean energy technologies.',
+          source: 'https://www.givinggreen.earth/recommendations',
+          sourceLabel: 'Giving Green: Climate recommendations',
+        },
+      ],
+    },
+  };
+
+  // ============================================================
+  // DYNAMIC IMPACT CALCULATION
+  // ============================================================
+  const cause = CAUSE_DATA[DONATION.causeArea];
+  const effectiveAmount = DONATION.amount * (1 - HAIRCUT);
+
+  function calcImpact(charity) {
+    const raw = effectiveAmount / charity.costPerUnit;
+    if (raw >= 10) return Math.floor(raw);
+    if (raw >= 1) return Math.floor(raw);
+    if (raw >= 0.1) return Math.round(raw * 10) / 10;
+    return Math.round(raw * 100) / 100;
+  }
+
+  function formatImpact(n) {
+    if (n >= 1000) return n.toLocaleString();
+    return String(n);
+  }
+
+  function getUnit(charity, count) {
+    return count === 1 ? charity.unitSingular : charity.unit;
+  }
+
+  // Filter out charities where impact rounds to 0
+  const activeCharities = cause.charities
+    .map(c => ({ ...c, impact: calcImpact(c) }))
+    .filter(c => c.impact > 0);
+
+  // ============================================================
+  // BUILD THE DOM
+  // ============================================================
+  const app = document.getElementById('app');
+  const amt = DONATION.currency + DONATION.amount;
+
+  // Screen 1
+  const donorSection = DONATION.isSelfDonation
+    ? `<div class="donor-label fade-up">You started it</div>
+       <div class="donor-name fade-up">Self-donation</div>`
+    : `<div class="donor-label fade-up">From</div>
+       <div class="donor-name fade-up">${DONATION.donorName}</div>`;
+
+  const quoteBlock = DONATION.isSelfDonation
+    ? `<div class="quote-block fade-up"><p>"Legend move. You backed yourself first."</p></div>`
+    : `<div class="quote-block fade-up"><p>"${DONATION.donorMessage}"</p></div>`;
+
+  // Screen 2 cards
+  const cardHTML = activeCharities.map((c, i) => `
+    <div class="impact-card${i === 0 ? ' active' : ''}" data-card="${i}">
+      <div class="charity-tag">${c.name}</div>
+      <div class="impact-num">${formatImpact(c.impact)}</div>
+      <div class="impact-unit">${getUnit(c, c.impact)}</div>
+      <div class="impact-desc">${c.desc}</div>
+      <a href="${c.source}" target="_blank" rel="noopener" class="source-link">${c.sourceLabel} &rarr;</a>
+    </div>
+  `).join('');
+
+  const dotsHTML = activeCharities.map((_, i) =>
+    `<div class="card-dot${i === 0 ? ' active' : ''}" data-cd="${i}"></div>`
+  ).join('');
+
+  app.innerHTML = `
+    <div class="screen active" data-screen="0">
+      <div class="glow glow-tr"></div>
+      <div class="glow glow-bl"></div>
+      <div class="s1-content">
+        <div class="badge-mini" id="badgeMini">
+          <div class="badge-mini-circle">🎯</div>
+          <div class="badge-mini-label">1st Donation</div>
+        </div>
+        <div class="tag fade-up">Race for Impact</div>
+        <div class="separator fade-up"></div>
+        ${donorSection}
+        <div class="amount-wrap fade-up">
+          <div class="amount-glow"></div>
+          <div class="big-number" id="amountCounter">${DONATION.currency}0</div>
+        </div>
+        ${quoteBlock}
+        <div class="separator fade-up"></div>
+        <div class="racer-info fade-up">
+          <div class="name">${DONATION.racerName}</div>
+          <div class="event">${DONATION.event}</div>
+        </div>
+      </div>
+      <div class="swipe-hint">Swipe &rarr;</div>
+    </div>
+
+    <div class="screen" data-screen="1">
+      <div class="glow glow-tl"></div>
+      <div class="glow glow-br"></div>
+      <div class="s2-content">
+        <div class="tag fade-up">Your ${amt} at work</div>
+        <div class="cause-badge fade-up">
+          <span class="icon">${cause.icon}</span>
+          <span class="label">${cause.name}</span>
+        </div>
+        <div class="headline fade-up" style="font-size: clamp(20px, 5vw, 28px); margin-bottom: 12px;">
+          What your <span class="accent">${amt}</span> does
+        </div>
+        <div class="cards-stack fade-up" id="cardsStack">${cardHTML}</div>
+        <div class="cards-nav fade-up">
+          <button class="card-arrow" id="cardPrev">&#8592;</button>
+          <div class="card-dots" id="cardDots">${dotsHTML}</div>
+          <span class="card-counter" id="cardCounter">1 / ${activeCharities.length}</span>
+          <button class="card-arrow" id="cardNext">&#8594;</button>
+        </div>
+        <div class="portfolio-note fade-up">
+          Impact per charity if your full donation went there.
+        </div>
+      </div>
+    </div>
+
+    <div class="screen" data-screen="2">
+      <div class="glow glow-tr"></div>
+      <div class="glow glow-bl"></div>
+      <div class="s3-content">
+        <div class="tag fade-up">Why ${cause.name}?</div>
+        <div class="headline fade-up" style="font-size: clamp(22px, 5vw, 32px);">We don't guess.<br><span class="accent">We measure.</span></div>
+        <div class="separator fade-up"></div>
+
+        <div class="video-container fade-up" id="videoContainer">
+          ${cause.expert.videoUrl
+            ? '<video src="' + cause.expert.videoUrl + '" controls playsinline preload="metadata"></video>'
+            : '<div class="video-placeholder"><div class="video-play-icon">&#9654;</div><div class="video-label">Video coming soon</div></div>'
+          }
+        </div>
+        <div class="expert-name fade-up">${cause.expert.name}</div>
+        <div class="expert-role fade-up">${cause.expert.role} &middot; ${cause.name}</div>
+
+        <a href="https://raceforimpact.com/impact" class="cta-button fade-up" style="margin-top: 16px;">See how we measure &rarr;</a>
+        <div class="branding fade-up">Race for Impact &middot; HIA &times; HYROX</div>
+      </div>
+    </div>
+  `;
+
+  // ============================================================
+  // SPLASH SCREEN - "THE PULSE AND LIFT"
+  // ============================================================
+  const splash = document.getElementById('splash');
+  const badgeMini = document.getElementById('badgeMini');
+  let splashDismissed = false;
+
+  function dismissSplash() {
+    if (splashDismissed) return;
+    splashDismissed = true;
+    splash.classList.add('gone');
+    document.getElementById('navBar').classList.remove('hidden-by-splash');
+    document.getElementById('arrowRight').style.opacity = '';
+    // Show the mini badge at top of Screen 1 after splash fades
+    setTimeout(() => {
+      badgeMini.classList.add('visible');
+      splash.style.display = 'none';
+    }, 600);
+  }
+
+  // Tap to skip
+  splash.addEventListener('click', dismissSplash);
+  splash.addEventListener('touchend', (e) => { e.preventDefault(); dismissSplash(); });
+
+  // Auto-dismiss after 2.5 seconds
+  setTimeout(dismissSplash, 2500);
+
+  // ============================================================
+  // NAVIGATION
+  // ============================================================
+  const screens = document.querySelectorAll('.screen');
+  const navDots = document.querySelectorAll('.nav-dot');
+  const navLabel = document.getElementById('navLabel');
+  const arrowLeft = document.getElementById('arrowLeft');
+  const arrowRight = document.getElementById('arrowRight');
+  const TOTAL = screens.length;
+  let current = 0;
+  let transitioning = false;
+
+  function goTo(index) {
+    if (index === current || index < 0 || index >= TOTAL || transitioning) return;
+    transitioning = true;
+    const prev = screens[current];
+    const next = screens[index];
+    const fwd = index > current;
+
+    next.style.transition = 'none';
+    next.style.transform = fwd ? 'translateX(100%)' : 'translateX(-100%)';
+    next.style.opacity = '0';
+    next.classList.remove('active');
+    next.offsetHeight;
+
+    next.style.transition = '';
+    next.classList.add('active');
+    next.style.transform = '';
+    next.style.opacity = '';
+
+    prev.classList.remove('active');
+    prev.style.transform = fwd ? 'translateX(-100%)' : 'translateX(100%)';
+    prev.style.opacity = '0';
+
+    current = index;
+    updateNav();
+    setTimeout(() => {
+      transitioning = false;
+      prev.style.transition = 'none';
+      prev.style.transform = '';
+      prev.style.opacity = '';
+      prev.offsetHeight;
+      prev.style.transition = '';
+    }, 550);
+  }
+
+  function updateNav() {
+    navDots.forEach((d, i) => d.classList.toggle('active', i === current));
+    navLabel.textContent = (current + 1) + ' / ' + TOTAL;
+    arrowLeft.classList.toggle('hidden', current === 0);
+    arrowRight.classList.toggle('hidden', current === TOTAL - 1);
+  }
+
+  navDots.forEach(d => d.addEventListener('click', () => goTo(parseInt(d.dataset.nav))));
+  arrowLeft.addEventListener('click', () => goTo(current - 1));
+  arrowRight.addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') goTo(current + 1);
+    if (e.key === 'ArrowLeft') goTo(current - 1);
+  });
+
+  // Touch swipe
+  let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+  app.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartTime = Date.now();
+  }, { passive: true });
+
+  app.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.2 && Date.now() - touchStartTime < 500) {
+      if (dx < 0) goTo(current + 1);
+      else goTo(current - 1);
+    }
+  }, { passive: true });
+
+  // ============================================================
+  // COUNT-UP
+  // ============================================================
+  // Count-up starts after splash dismisses
+  const amountEl = document.getElementById('amountCounter');
+  let counted = false;
+  function startCountUp() {
+    if (counted) return;
+    counted = true;
+    const start = performance.now();
+    function tick(now) {
+      const p = Math.min((now - start) / 1200, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      amountEl.textContent = DONATION.currency + Math.round(eased * DONATION.amount);
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  // Wait for splash to go, then count up
+  const countUpCheck = setInterval(() => {
+    if (splashDismissed) { clearInterval(countUpCheck); setTimeout(startCountUp, 400); }
+  }, 100);
+
+  // ============================================================
+  // IMPACT CARD CAROUSEL
+  // ============================================================
+  const cards = document.querySelectorAll('.impact-card');
+  const cardDots = document.querySelectorAll('.card-dot');
+  const cardCounter = document.getElementById('cardCounter');
+  const cardPrev = document.getElementById('cardPrev');
+  const cardNext = document.getElementById('cardNext');
+  const stack = document.getElementById('cardsStack');
+  const CC = activeCharities.length;
+  let activeCard = 0;
+  let autoTimer;
+
+  function setCard(i) {
+    cards.forEach((c, idx) => {
+      c.classList.remove('active', 'prev');
+      if (idx === i) c.classList.add('active');
+      else if (idx === (i - 1 + CC) % CC) c.classList.add('prev');
+    });
+    cardDots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+    cardCounter.textContent = (i + 1) + ' / ' + CC;
+    activeCard = i;
+  }
+
+  function startAuto() { clearInterval(autoTimer); autoTimer = setInterval(() => setCard((activeCard + 1) % CC), 3500); }
+  startAuto();
+
+  cardNext.addEventListener('click', (e) => { e.stopPropagation(); setCard((activeCard + 1) % CC); startAuto(); });
+  cardPrev.addEventListener('click', (e) => { e.stopPropagation(); setCard((activeCard - 1 + CC) % CC); startAuto(); });
+  cardDots.forEach(d => d.addEventListener('click', (e) => { e.stopPropagation(); setCard(parseInt(d.dataset.cd)); startAuto(); }));
+
+  // Vertical swipe on cards
+  let cardTouchY = 0;
+  stack.addEventListener('touchstart', (e) => { cardTouchY = e.touches[0].clientY; }, { passive: true });
+  stack.addEventListener('touchend', (e) => {
+    const dy = e.changedTouches[0].clientY - cardTouchY;
+    if (Math.abs(dy) > 40) {
+      if (dy < 0) setCard((activeCard + 1) % CC);
+      else setCard((activeCard - 1 + CC) % CC);
+      startAuto();
+    }
+  }, { passive: true });
+
+})();
+</script>
+</body>
+</html>
